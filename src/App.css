@@ -1,14 +1,14 @@
 .app {
   background-color: transparent;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   height: 100%;
+  overflow: hidden;
 }
 
-/* .app > div {
-  flex-grow: 1;
-} */
-
-button {
-  font-size: calc(10px + 2vmin);
+.app-main {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  overflow: hidden;
 }

@@ -1,0 +1,140 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+  height: 42px;
+  background: rgba(30, 30, 30, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+}
+
+.toolbar-left,
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  -webkit-app-region: no-drag;
+}
+
+.toolbar-left {
+  /* leave space for macOS traffic lights */
+  padding-left: 70px;
+}
+
+.toolbar-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  -webkit-app-region: no-drag;
+}
+
+.toolbar-filename {
+  font-family: 'DM Mono', 'Courier New', monospace;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.toolbar-dirty {
+  color: #f59e0b;
+  font-size: 0.7rem;
+}
+
+.toolbar-btn {
+  font-size: 0.72rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  padding: 0.25rem 0.65rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  white-space: nowrap;
+}
+
+.toolbar-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.toolbar-btn:active {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.toolbar-btn-secondary {
+  opacity: 0.7;
+}
+
+.toolbar-btn-save-active {
+  border-color: rgba(29, 95, 168, 0.7);
+  background: rgba(29, 95, 168, 0.2);
+  color: #7eb5f0;
+}
+
+.toolbar-btn-save-active:hover {
+  background: rgba(29, 95, 168, 0.35);
+  color: #a8d0f8;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 0 0.15rem;
+}
+
+.toolbar-autosave {
+  font-family: 'DM Mono', 'Courier New', monospace;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.25);
+  white-space: nowrap;
+}
+
+.toolbar-seg {
+  display: inline-flex;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.toolbar-seg-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.65rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s;
+  white-space: nowrap;
+}
+
+.toolbar-seg-btn + .toolbar-seg-btn {
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.toolbar-seg-btn:hover {
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.toolbar-seg-btn.active {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.seg-dot {
+  font-size: 0.48rem;
+  color: #f59e0b;
+  line-height: 1;
+}

@@ -1,0 +1,341 @@
+
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap');
+
+/* ── TOKENS ────────────────────────────────────────────────────────────── */
+:root {
+  --ink:          #1a1917;
+  --ink-mid:      #4a4845;
+  --ink-faint:    #8a8784;
+  --rule:         #dddbd4;
+  --accent:       #1d5fa8;
+  --accent-light: #e6f0fb;
+  --accent-warm:  #fef6e4;
+  --accent-warm-text: #7c5700;
+  --tag-bg:       #f0ede6;
+  --page-bg:      #faf9f5;
+  --paper:        #ffffff;
+
+  --serif: 'DM Serif Display', Georgia, serif;
+  --sans:  'DM Sans', system-ui, sans-serif;
+  --mono:  'DM Mono', 'Courier New', monospace;
+}
+
+/* ── RESET ─────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── PAGE ──────────────────────────────────────────────────────────────── */
+html {
+  background: var(--page-bg);
+  font-family: var(--sans);
+  color: var(--ink);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  max-width: 900px;
+  margin: 3rem auto;
+  padding: 0 2rem 4rem;
+}
+
+/* ── NAME / TITLE ──────────────────────────────────────────────────────── */
+
+/* h1 renders the name — use pandoc's --metadata title or first H1 */
+h1 {
+  font-family: var(--serif);
+  font-size: 3rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-bottom: 0.3rem;
+}
+
+/* Paragraph immediately after h1 = job title */
+h1 + p {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.1rem;
+  color: var(--ink-mid);
+  margin-bottom: 1rem;
+}
+
+/* ── CONTACTS ──────────────────────────────────────────────────────────── */
+/* ::contacts div — a compact inline list of contact details */
+.contacts,
+div.contacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1.25rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--ink-mid);
+  margin-bottom: 0;
+}
+
+.contacts ul,
+div.contacts ul {
+  display: contents;
+}
+
+.contacts li,
+div.contacts li {
+  list-style: none;
+}
+
+.contacts a,
+div.contacts a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.contacts a:hover,
+div.contacts a:hover {
+  text-decoration: underline;
+}
+
+/* ── DIVIDER ───────────────────────────────────────────────────────────── */
+hr {
+  border: none;
+  border-top: 1.5px solid var(--ink);
+  margin: 1.5rem 0 2rem;
+}
+
+/* ── TWO-COLUMN LAYOUT ─────────────────────────────────────────────────── */
+/* .cv-body wraps sidebar + main */
+.cv-body,
+div.cv-body {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 0 3.5rem;
+  align-items: start;
+}
+
+  /* left column */
+/*.sidebar,
+div.sidebar {
+}*/
+
+  /* right column */
+/*.main,
+div.main {
+}*/
+
+/* ── SECTION HEADINGS ──────────────────────────────────────────────────── */
+
+/* h2 = section labels (Skills, Experience, Projects…) */
+h2 {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 1.75rem 0 0.6rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 0.5px solid var(--rule);
+}
+
+/* First h2 in sidebar needs less top margin */
+.sidebar h2:first-of-type,
+div.sidebar h2:first-of-type { margin-top: 0; }
+
+/* ── SKILL GROUP LABELS (h3 in sidebar) ────────────────────────────────── */
+.sidebar h3,
+div.sidebar h3 {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+  margin: 0.9rem 0 0.35rem;
+  text-transform: none;
+  border: none;
+}
+
+/* ── INLINE CODE = TAGS ─────────────────────────────────────────────────── */
+code {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  background: var(--tag-bg);
+  color: var(--ink-mid);
+  padding: 0.18rem 0.45rem;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+/* Tags after a bold "Stack:" label get a normal line break */
+p > strong:first-child + code,
+p > strong:first-child ~ code {
+  display: inline-block;
+  margin: 0.15rem 0.15rem 0 0;
+}
+
+/* ── PARAGRAPHS ────────────────────────────────────────────────────────── */
+p {
+  font-size: 0.85rem;
+  line-height: 1.75;
+  color: var(--ink-mid);
+  margin-bottom: 0.5rem;
+}
+
+.sidebar p,
+div.sidebar p {
+  font-size: 0.82rem;
+  line-height: 1.8;
+}
+
+/* ── LISTS ─────────────────────────────────────────────────────────────── */
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0.35rem 0 0.75rem;
+}
+
+.main ul li,
+div.main ul li {
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: var(--ink-mid);
+  padding-left: 1rem;
+  position: relative;
+  margin-bottom: 0.25rem;
+}
+
+.main ul li::before,
+div.main ul li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: var(--ink-faint);
+  font-size: 0.75em;
+  top: 0.12em;
+}
+
+/* ── EXPERIENCE ENTRIES ─────────────────────────────────────────────────── */
+
+/* h3 in main = role/project titles */
+.main h3,
+div.main h3 {
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--ink);
+  margin: 1.5rem 0 0.2rem;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  border: none;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Inline code inside h3 = date badge */
+.main h3 code,
+div.main h3 code {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  background: transparent;
+  color: var(--ink-faint);
+  padding: 0;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+/* Paragraph after h3 that starts with * = org/company line */
+.main h3 + p em:only-child,
+div.main h3 + p em:only-child {
+  font-style: normal;
+  font-size: 0.8rem;
+  color: var(--ink-mid);
+}
+
+.main h3 + p,
+div.main h3 + p {
+  margin-bottom: 0.4rem;
+}
+
+/* ── PROJECT CARDS ──────────────────────────────────────────────────────── */
+
+/* h3 with class project-featured = Immoview-style card */
+h3.project-featured,
+.project-featured {
+  background: #fdfcfa;
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  border-radius: 2px;
+  padding: 0.9rem 1.1rem 1rem;
+  margin: 1.25rem 0;
+  display: block;
+}
+
+/* ── STATUS BADGES (code inside h3 titles) ──────────────────────────────── */
+/* "In Progress" / "Shipped" / "Candidate" codes in h3 */
+h3 code:last-child {
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: var(--accent-light);
+  color: var(--accent);
+  padding: 0.18rem 0.5rem;
+  border-radius: 2px;
+}
+
+/* ── STRONG INSIDE P ────────────────────────────────────────────────────── */
+strong {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* ── EM (italic) ────────────────────────────────────────────────────────── */
+em {
+  font-style: italic;
+  color: var(--ink-mid);
+}
+
+/* ── LINKS ──────────────────────────────────────────────────────────────── */
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+
+/* ── SIDEBAR HR (between sections in sidebar) ───────────────────────────── */
+.sidebar hr,
+div.sidebar hr {
+  border: none;
+  border-top: 0.5px solid var(--rule);
+  margin: 1.25rem 0;
+}
+
+/* ── PRINT ──────────────────────────────────────────────────────────────── */
+@media print {
+  @page {
+    size: A4;
+    margin: 1.5cm 2cm;
+  }
+
+  html { background: white; font-size: 13px; }
+  body { margin: 0; padding: 0; max-width: none; }
+
+  a { color: var(--ink); text-decoration: none; }
+
+  h3 { page-break-after: avoid; }
+  ul  { page-break-inside: avoid; }
+}
+
+/* ── RESPONSIVE ─────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  h1 { font-size: 2.2rem; }
+
+  .cv-body,
+  div.cv-body {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar,
+  div.sidebar {
+    border-bottom: 0.5px solid var(--rule);
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+}

@@ -6,6 +6,7 @@ import { bracketMatching, indentOnInput } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
 import { defaultHighlightStyle, HighlightStyle, syntaxHighlighting } from '@codemirror/language'
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown'
+import { css } from '@codemirror/lang-css'
 import { languages } from '@codemirror/language-data'
 import { oneDark } from '@codemirror/theme-one-dark'
 import type React from 'react'
@@ -17,28 +18,16 @@ export const transparentTheme = EditorView.theme({
   }
 })
 
-const customSyntax = HighlightStyle.define([
-  {
-    tag: tags.heading1,
-    fontSize: '1.6em',
-    fontWeight: 'bold'
-  },
-  {
-    tag: tags.heading2,
-    fontSize: '1.4em',
-    fontWeight: 'bold'
-  },
-  {
-    tag: tags.heading3,
-    fontSize: '1.2em',
-    fontWeight: 'bold'
-  }
+const mdHeadingSyntax = HighlightStyle.define([
+  { tag: tags.heading1, fontSize: '1.6em', fontWeight: 'bold' },
+  { tag: tags.heading2, fontSize: '1.4em', fontWeight: 'bold' },
+  { tag: tags.heading3, fontSize: '1.2em', fontWeight: 'bold' },
 ])
 
-
 interface Props {
-  initialDoc: string,
+  initialDoc: string
   onChange?: (state: EditorState) => void
+  language?: 'markdown' | 'css'
 }
 
 const useCodeMirror = <T extends Element>(
@@ -46,10 +35,18 @@ const useCodeMirror = <T extends Element>(
 ): [React.MutableRefObject<T | null>, EditorView?] => {
   const refContainer = useRef<T>(null)
   const [editorView, setEditorView] = useState<EditorView>()
-  const { onChange } = props
+  const { onChange, language = 'markdown' } = props
 
   useEffect(() => {
     if (!refContainer.current) return
+
+    const langExtensions =
+      language === 'css'
+        ? [css()]
+        : [
+            markdown({ base: markdownLanguage, codeLanguages: languages, addKeymap: true }),
+            syntaxHighlighting(mdHeadingSyntax),
+          ]
 
     const startState = EditorState.create({
       doc: props.initialDoc,
@@ -62,28 +59,20 @@ const useCodeMirror = <T extends Element>(
         bracketMatching(),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         highlightActiveLine(),
-        markdown({
-          base: markdownLanguage,
-          codeLanguages: languages,
-          addKeymap: true
-        }),
+        ...langExtensions,
         oneDark,
         transparentTheme,
-        syntaxHighlighting(customSyntax),
         EditorView.lineWrapping,
         EditorView.updateListener.of(update => {
-          if (update.changes) {
-            onChange && onChange(update.state)
-          }
-        })
-      ]
+          if (update.docChanged) onChange && onChange(update.state)
+        }),
+      ],
     })
 
-    const view = new EditorView({
-      state: startState,
-      parent: refContainer.current
-    })
+    const view = new EditorView({ state: startState, parent: refContainer.current })
     setEditorView(view)
+
+    return () => view.destroy()
   }, [refContainer])
 
   return [refContainer, editorView]

@@ -1,0 +1,56 @@
+.template-menu {
+  position: relative;
+}
+
+.template-chevron {
+  font-size: 0.55rem;
+  margin-left: 0.3rem;
+  opacity: 0.6;
+}
+
+.template-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 180px;
+  background: rgba(28, 28, 30, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(16px);
+  overflow: hidden;
+  z-index: 100;
+}
+
+.template-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.78rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: rgba(255, 255, 255, 0.8);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+
+.template-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.template-item-icon {
+  font-size: 0.85rem;
+  opacity: 0.45;
+}
+
+.template-item-ext {
+  margin-left: auto;
+  font-family: 'DM Mono', 'Courier New', monospace;
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.25);
+}
