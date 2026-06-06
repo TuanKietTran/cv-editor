@@ -283,13 +283,17 @@ ${html}
   }
 
   // ── Keyboard shortcuts ────────────────────────────────────────────────
-  const handleSaveRef = useRef(handleSave)
-  handleSaveRef.current = handleSave
+  const handleSaveRef    = useRef(handleSave)
+  const handleSaveAsRef  = useRef(handleSaveAs)
+  const handleOpenRef    = useRef(handleOpen)
+  handleSaveRef.current   = handleSave
+  handleSaveAsRef.current = handleSaveAs
+  handleOpenRef.current   = handleOpen
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey)) return
-      if (e.key === 's') { e.preventDefault(); e.shiftKey ? handleSaveAs() : handleSaveRef.current() }
-      if (e.key === 'o') { e.preventDefault(); handleOpen() }
+      if (e.key === 's') { e.preventDefault(); e.shiftKey ? handleSaveAsRef.current() : handleSaveRef.current() }
+      if (e.key === 'o') { e.preventDefault(); handleOpenRef.current() }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
