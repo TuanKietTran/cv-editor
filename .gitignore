@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# local server data (created by npm run server without CV_DATA_DIR set)
+/data

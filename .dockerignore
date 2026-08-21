@@ -1,0 +1,6 @@
+node_modules
+dist
+data
+src-tauri/target
+.git
+*.log

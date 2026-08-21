@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { invoke } from '@tauri-apps/api/core'
+import * as backend from '../lib/backend'
 import './TemplateMenu.css'
 
 interface Props {
@@ -12,9 +12,9 @@ export default function TemplateMenu({ onSelect }: Props) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    invoke<string[]>('list_templates')
+    backend.listTemplates()
       .then(setTemplates)
-      .catch(() => {})
+      .catch((e) => console.error('list_templates failed:', e))
   }, [])
 
   useEffect(() => {

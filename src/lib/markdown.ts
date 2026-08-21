@@ -34,7 +34,7 @@ function fencedDivs(md: MarkdownIt): void {
 }
 
 const md = new MarkdownIt({ html: true, linkify: true, typographer: true })
-  .use(markdownItAttrs)
+  .use(markdownItAttrs as any) // known @types/markdown-it dual CJS/ESM declaration mismatch upstream
   .use(fencedDivs)
 
 export function render(src: string): string {

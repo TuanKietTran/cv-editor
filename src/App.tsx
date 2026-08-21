@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { invoke } from '@tauri-apps/api/core'
 import { open as dialogOpen, save as dialogSave, confirm as dialogConfirm } from '@tauri-apps/plugin-dialog'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import './App.css'
@@ -8,8 +7,8 @@ import EditorPane, { EditorTab } from './components/EditorPane'
 import CvPreview from './components/CvPreview'
 import { render } from './lib/markdown'
 import { useAutoSave } from './hooks/useAutoSave'
-
-const isTauri = () => typeof window !== 'undefined' && ('__TAURI_INTERNALS__' in window || '__TAURI__' in window)
+import * as backend from './lib/backend'
+import { isTauri } from './lib/backend'
 
 function pickFile(accept: string, onLoad: (content: string) => void) {
   const input = document.createElement('input')
@@ -23,6 +22,13 @@ function pickFile(accept: string, onLoad: (content: string) => void) {
     reader.readAsText(file)
   }
   input.click()
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = filename; a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 function App() {
@@ -50,7 +56,7 @@ function App() {
 
   const dirty = mdDirty || cssDirty
 
-  const { lastSaved, recordSave, getWebAutosave } = useAutoSave(
+  const { lastSaved, recordSave } = useAutoSave(
     content, stylesheetContent, projectName,
     () => { setMdDirty(false); setCssDirty(false) },
   )
@@ -58,66 +64,68 @@ function App() {
   // ── Init ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const init = async () => {
-      if (isTauri()) {
-        await invoke('init_app_dir')
+      await backend.initApp()
 
-        const loadTemplate = async () => {
-          const mdPath  = await invoke<string>('get_template_path', { name: 'cv.md' })
-          const cssPath = await invoke<string>('get_template_path', { name: 'cv.css' })
-          const md  = await invoke<string>('read_file', { path: mdPath })
-          const css = await invoke<string>('read_file', { path: cssPath })
-          setContent(md);  setPreviewContent(md)
-          setStylesheetContent(css); setPreviewCss(css)
-        }
+      const loadTemplate = async () => {
+        const { md, css } = await backend.getTemplate('cv')
+        setContent(md);  setPreviewContent(md)
+        setStylesheetContent(css); setPreviewCss(css)
+      }
 
-        const lastProject = await invoke<string | null>('get_last_project')
-        if (lastProject) {
-          try {
-            const data = await invoke<{ md: string; css: string }>('open_project', { name: lastProject })
-            setContent(data.md);  setPreviewContent(data.md)
-            setStylesheetContent(data.css); setPreviewCss(data.css)
-            setProjectName(lastProject)
-          } catch {
-            await loadTemplate()
-          }
-        } else {
+      const lastProject = await backend.getLastProject()
+      if (lastProject) {
+        try {
+          const data = await backend.openProject(lastProject)
+          setContent(data.md);  setPreviewContent(data.md)
+          setStylesheetContent(data.css); setPreviewCss(data.css)
+          setProjectName(lastProject)
+        } catch {
           await loadTemplate()
         }
-        setMdOpenKey(k => k + 1)
-        setCssOpenKey(k => k + 1)
       } else {
-        const saved = getWebAutosave()
-        if (saved.md)  { setContent(saved.md);  setPreviewContent(saved.md)  }
-        if (saved.css) { setStylesheetContent(saved.css); setPreviewCss(saved.css) }
-        setMdOpenKey(k => k + 1)
-        setCssOpenKey(k => k + 1)
+        await loadTemplate()
       }
+      setMdOpenKey(k => k + 1)
+      setCssOpenKey(k => k + 1)
     }
-    init()
+    init().catch(e => console.error('Init failed:', e))
   }, [])
 
-  // ── Title bar ─────────────────────────────────────────────────────────
+  // ── Title bar / tab title ───────────────────────────────────────────
   useEffect(() => {
-    if (!isTauri()) return
     const name = projectName ?? 'untitled'
-    getCurrentWindow().setTitle(dirty ? `● ${name} — CV Editor` : `${name} — CV Editor`)
+    const title = dirty ? `● ${name} — CV Editor` : `${name} — CV Editor`
+    if (isTauri()) {
+      getCurrentWindow().setTitle(title)
+    } else {
+      document.title = title
+    }
   }, [projectName, dirty])
 
   // ── Close warning ─────────────────────────────────────────────────────
   const dirtyRef = useRef(dirty)
   dirtyRef.current = dirty
   useEffect(() => {
-    if (!isTauri()) return
-    let unlisten: (() => void) | null = null
-    getCurrentWindow().onCloseRequested(async (event) => {
-      if (dirtyRef.current) {
-        const ok = await dialogConfirm('You have unsaved changes. Close anyway?', {
-          title: 'Unsaved Changes', kind: 'warning',
-        })
-        if (!ok) event.preventDefault()
+    if (isTauri()) {
+      let unlisten: (() => void) | null = null
+      getCurrentWindow().onCloseRequested(async (event) => {
+        if (dirtyRef.current) {
+          const ok = await dialogConfirm('You have unsaved changes. Close anyway?', {
+            title: 'Unsaved Changes', kind: 'warning',
+          })
+          if (!ok) event.preventDefault()
+        }
+      }).then(fn => { unlisten = fn })
+      return () => { unlisten?.() }
+    } else {
+      const onBeforeUnload = (e: BeforeUnloadEvent) => {
+        if (!dirtyRef.current) return
+        e.preventDefault()
+        e.returnValue = ''
       }
-    }).then(fn => { unlisten = fn })
-    return () => { unlisten?.() }
+      window.addEventListener('beforeunload', onBeforeUnload)
+      return () => window.removeEventListener('beforeunload', onBeforeUnload)
+    }
   }, [])
 
   // ── Editor change handlers ────────────────────────────────────────────
@@ -127,23 +135,20 @@ function App() {
   // ── Open ──────────────────────────────────────────────────────────────
   const handleOpen = async () => {
     if (isTauri()) {
-      const appDir = await invoke<string>('get_app_dir')
       const p = await dialogOpen({
         filters: [{ name: 'Markdown', extensions: ['md'] }],
-        defaultPath: appDir,
         multiple: false,
       })
       if (!p || typeof p !== 'string') return
       try {
-        const data = await invoke<{ md: string; css: string; project_name: string }>('open_file', { mdPath: p })
+        const data = await backend.openFileNative(p)
         setContent(data.md);  setPreviewContent(data.md)
         setStylesheetContent(data.css); setPreviewCss(data.css)
         setProjectName(data.project_name)
         setMdDirty(false); setCssDirty(false)
         setMdOpenKey(k => k + 1); setCssOpenKey(k => k + 1)
-        // Persist immediately so reopen works even if the app closes before autosave fires
-        await invoke('save_project', { name: data.project_name, md: data.md, css: data.css })
-        await invoke('set_last_project', { name: data.project_name })
+        await backend.saveProject(data.project_name, data.md, data.css)
+        await backend.setLastProject(data.project_name)
         recordSave()
       } catch (e) { console.error('Open failed:', e) }
     } else {
@@ -163,18 +168,16 @@ function App() {
 
   // ── Save ──────────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
-    if (!isTauri()) return
-
     let name = projectName
     if (!name) {
       name = window.prompt('Project name:', 'cv')?.trim() ?? null
       if (!name) return
       setProjectName(name)
-      await invoke('set_last_project', { name })
+      await backend.setLastProject(name)
     }
 
     try {
-      await invoke('save_project', { name, md: content, css: stylesheetContent })
+      await backend.saveProject(name, content, stylesheetContent)
       setMdDirty(false); setCssDirty(false)
       recordSave()
     } catch (e) { console.error('Save failed:', e) }
@@ -182,15 +185,14 @@ function App() {
 
   // ── Save As ───────────────────────────────────────────────────────────
   const handleSaveAs = async () => {
-    if (!isTauri()) return
     const name = window.prompt('Save as project name:', projectName ?? 'cv')?.trim() ?? null
     if (!name) return
     try {
-      await invoke('save_project', { name, md: content, css: stylesheetContent })
+      await backend.saveProject(name, content, stylesheetContent)
       setProjectName(name)
       setMdDirty(false); setCssDirty(false)
       recordSave()
-      await invoke('set_last_project', { name })
+      await backend.setLastProject(name)
     } catch (e) { console.error('Save As failed:', e) }
   }
 
@@ -219,14 +221,10 @@ ${html}
     if (isTauri()) {
       const p = await dialogSave({ filters: [{ name: 'HTML', extensions: ['html'] }], defaultPath: `${name}.html` })
       if (!p) return
-      try { await invoke('write_file', { path: p, content: html }) }
+      try { await backend.writeFileNative(p, html) }
       catch (e) { console.error('Export HTML failed:', e) }
     } else {
-      const blob = new Blob([html], { type: 'text/html' })
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement('a')
-      a.href = url; a.download = `${name}.html`; a.click()
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
+      downloadBlob(new Blob([html], { type: 'text/html' }), `${name}.html`)
     }
   }
 
@@ -238,44 +236,36 @@ ${html}
         defaultPath: `${name}.pdf`,
       })
       if (!p) return
-      try { await invoke('export_pdf_native', { html, path: p }) }
+      try { await backend.exportPdfNative(html, p) }
       catch (e) { console.error('Export PDF failed:', e); alert(`Export PDF failed: ${e}`) }
     } else {
-      const blob   = new Blob([html], { type: 'text/html' })
-      const url    = URL.createObjectURL(blob)
-      const iframe = document.createElement('iframe')
-      iframe.style.cssText = 'position:fixed;top:-10000px;left:-10000px;width:0;height:0;border:none'
-      iframe.src = url
-      document.body.appendChild(iframe)
-      iframe.onload = () => {
-        iframe.contentWindow?.print()
-        setTimeout(() => { document.body.removeChild(iframe); URL.revokeObjectURL(url) }, 2000)
-      }
+      try {
+        const blob = await backend.exportPdf(html, `${name}.pdf`)
+        downloadBlob(blob, `${name}.pdf`)
+      } catch (e) { console.error('Export PDF failed:', e); alert(`Export PDF failed: ${e}`) }
     }
   }
 
   // ── Load template ─────────────────────────────────────────────────────
   const handleLoadTemplate = async (name: string) => {
     if (dirty) {
-      const ok = await dialogConfirm(
-        `Load template "${name}"? Unsaved changes will be lost.`,
-        { title: 'Load Template', kind: 'warning' }
-      )
-      if (!ok) return
+      if (isTauri()) {
+        const ok = await dialogConfirm(
+          `Load template "${name}"? Unsaved changes will be lost.`,
+          { title: 'Load Template', kind: 'warning' }
+        )
+        if (!ok) return
+      } else {
+        const ok = window.confirm(`Load template "${name}"? Unsaved changes will be lost.`)
+        if (!ok) return
+      }
     }
 
-    const mdPath  = await invoke<string>('get_template_path', { name: `${name}.md` })
-    const cssPath = await invoke<string>('get_template_path', { name: `${name}.css` })
-
     try {
-      const text = await invoke<string>('read_file', { path: mdPath })
-      setContent(text); setPreviewContent(text)
-    } catch (e) { console.error('Load template MD failed:', e); return }
-
-    try {
-      const css = await invoke<string>('read_file', { path: cssPath })
+      const { md, css } = await backend.getTemplate(name)
+      setContent(md); setPreviewContent(md)
       setStylesheetContent(css); setPreviewCss(css)
-    } catch { /* no paired CSS — keep current */ }
+    } catch (e) { console.error('Load template failed:', e); return }
 
     setProjectName(null)
     setMdDirty(false); setCssDirty(false)
