@@ -146,6 +146,11 @@ fn write_file(path: String, content: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn write_binary_file(path: String, data: Vec<u8>) -> Result<(), String> {
+    fs::write(&path, data).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 fn get_template_path(name: String) -> String {
     let app_tpl = app_dir().join("templates").join(&name);
     if app_tpl.exists() {
@@ -253,6 +258,7 @@ pub fn run() {
             save_project,
             read_file,
             write_file,
+            write_binary_file,
             open_file,
             get_template_path,
             list_templates,

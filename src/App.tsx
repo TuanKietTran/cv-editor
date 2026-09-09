@@ -8,6 +8,7 @@ import EditorPane, { EditorTab } from './components/EditorPane'
 import CvPreview from './components/CvPreview'
 import { render } from './lib/markdown'
 import { useAutoSave } from './hooks/useAutoSave'
+import { renderPreviewImage, type ImageFormat } from './lib/imageExport'
 
 const isTauri = () => typeof window !== 'undefined' && ('__TAURI_INTERNALS__' in window || '__TAURI__' in window)
 
@@ -254,6 +255,31 @@ ${html}
     }
   }
 
+  const handleExportImage = async (format: ImageFormat) => {
+    const name = projectName ?? 'cv'
+    const extension = format === 'png' ? 'png' : 'jpg'
+    try {
+      const dataUrl = await renderPreviewImage(format)
+      if (isTauri()) {
+        const p = await dialogSave({
+          filters: [{ name: format === 'png' ? 'PNG image' : 'JPEG image', extensions: [extension] }],
+          defaultPath: `${name}.${extension}`,
+        })
+        if (!p) return
+        const bytes = new Uint8Array(await (await fetch(dataUrl)).arrayBuffer())
+        await invoke('write_binary_file', { path: p, data: Array.from(bytes) })
+      } else {
+        const a = document.createElement('a')
+        a.href = dataUrl
+        a.download = `${name}.${extension}`
+        a.click()
+      }
+    } catch (e) {
+      console.error(`Export ${format.toUpperCase()} failed:`, e)
+      alert(`Export ${format.toUpperCase()} failed: ${e}`)
+    }
+  }
+
   // ── Load template ─────────────────────────────────────────────────────
   const handleLoadTemplate = async (name: string) => {
     if (dirty) {
@@ -314,6 +340,7 @@ ${html}
         onSaveAs={handleSaveAs}
         onExportHtml={handleExportHtml}
         onExportPdf={handleExportPdf}
+        onExportImage={handleExportImage}
         onLoadTemplate={handleLoadTemplate}
       />
       <div className="app-main">

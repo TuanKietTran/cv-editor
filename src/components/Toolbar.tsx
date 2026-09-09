@@ -15,6 +15,7 @@ interface Props {
   onSaveAs: () => void
   onExportHtml: () => void
   onExportPdf: () => void
+  onExportImage: (format: 'png' | 'jpeg') => void
   onLoadTemplate: (name: string) => void
 }
 
@@ -38,6 +39,7 @@ export default function Toolbar({
   onSaveAs,
   onExportHtml,
   onExportPdf,
+  onExportImage,
   onLoadTemplate,
 }: Props) {
   return (
@@ -64,6 +66,12 @@ export default function Toolbar({
         </button>
         <button className="toolbar-btn" onClick={onExportPdf} title="Export PDF">
           Export PDF
+        </button>
+        <button className="toolbar-btn" onClick={() => onExportImage('png')} title="Export PNG">
+          Export PNG
+        </button>
+        <button className="toolbar-btn" onClick={() => onExportImage('jpeg')} title="Export JPEG">
+          Export JPEG
         </button>
         <div className="toolbar-divider" />
         <div className="toolbar-seg" role="group" aria-label="Editor mode">
