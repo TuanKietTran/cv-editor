@@ -4,9 +4,14 @@ import { open as dialogOpen, save as dialogSave, confirm as dialogConfirm } from
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import './App.css'
 import Toolbar from './components/Toolbar'
+import AppSidebar, { type AppView } from './components/AppSidebar'
+import ProfileManager from './components/ProfileManager'
 import EditorPane, { EditorTab } from './components/EditorPane'
 import CvPreview from './components/CvPreview'
+import CvImportDialog from './components/CvImportDialog'
+import type { CvImportPreview } from './types/cvImport'
 import { render } from './lib/markdown'
+import { bundledTemplates } from './lib/templates'
 import { useAutoSave } from './hooks/useAutoSave'
 import { renderPreviewImage, type ImageFormat } from './lib/imageExport'
 
@@ -27,6 +32,8 @@ function pickFile(accept: string, onLoad: (content: string) => void) {
 }
 
 function App() {
+  const [activeView, setActiveView]       = useState<AppView>('editor')
+  const [importOpen, setImportOpen]       = useState(false)
   const [projectName, setProjectName]     = useState<string | null>(null)
   const [content, setContent]             = useState<string>('')
   const [mdDirty, setMdDirty]             = useState(false)
@@ -88,8 +95,11 @@ function App() {
         setCssOpenKey(k => k + 1)
       } else {
         const saved = getWebAutosave()
-        if (saved.md)  { setContent(saved.md);  setPreviewContent(saved.md)  }
-        if (saved.css) { setStylesheetContent(saved.css); setPreviewCss(saved.css) }
+        const fallback = bundledTemplates.cv
+        const markdown = saved.md || fallback?.markdown || ''
+        const css = saved.css || fallback?.css || ''
+        setContent(markdown); setPreviewContent(markdown)
+        setStylesheetContent(css); setPreviewCss(css)
         setMdOpenKey(k => k + 1)
         setCssOpenKey(k => k + 1)
       }
@@ -160,6 +170,18 @@ function App() {
         })
       }
     }
+  }
+
+  // ── Import extracted Markdown + CSS ───────────────────────────────────
+  const handleApplyImport = (preview: CvImportPreview, filename: string) => {
+    if (dirty && !window.confirm('Replace the current Markdown and CSS with this imported CV? Unsaved changes will be lost.')) return
+    const name = filename.replace(/\.[^.]+$/, '').trim() || 'imported-cv'
+    setContent(preview.markdown); setPreviewContent(preview.markdown)
+    setStylesheetContent(preview.css); setPreviewCss(preview.css)
+    setProjectName(name)
+    setMdDirty(true); setCssDirty(true)
+    setMdOpenKey(key => key + 1); setCssOpenKey(key => key + 1)
+    setActiveTab('md'); setActiveView('editor'); setImportOpen(false)
   }
 
   // ── Save ──────────────────────────────────────────────────────────────
@@ -283,25 +305,32 @@ ${html}
   // ── Load template ─────────────────────────────────────────────────────
   const handleLoadTemplate = async (name: string) => {
     if (dirty) {
-      const ok = await dialogConfirm(
-        `Load template "${name}"? Unsaved changes will be lost.`,
-        { title: 'Load Template', kind: 'warning' }
-      )
+      const message = `Load template "${name}"? Unsaved changes will be lost.`
+      const ok = isTauri()
+        ? await dialogConfirm(message, { title: 'Load Template', kind: 'warning' })
+        : window.confirm(message)
       if (!ok) return
     }
 
-    const mdPath  = await invoke<string>('get_template_path', { name: `${name}.md` })
-    const cssPath = await invoke<string>('get_template_path', { name: `${name}.css` })
+    if (!isTauri()) {
+      const template = bundledTemplates[name]
+      if (!template) { console.error(`Template not found: ${name}`); return }
+      setContent(template.markdown); setPreviewContent(template.markdown)
+      setStylesheetContent(template.css); setPreviewCss(template.css)
+    } else {
+      const mdPath  = await invoke<string>('get_template_path', { name: `${name}.md` })
+      const cssPath = await invoke<string>('get_template_path', { name: `${name}.css` })
 
-    try {
-      const text = await invoke<string>('read_file', { path: mdPath })
-      setContent(text); setPreviewContent(text)
-    } catch (e) { console.error('Load template MD failed:', e); return }
+      try {
+        const text = await invoke<string>('read_file', { path: mdPath })
+        setContent(text); setPreviewContent(text)
+      } catch (e) { console.error('Load template MD failed:', e); return }
 
-    try {
-      const css = await invoke<string>('read_file', { path: cssPath })
-      setStylesheetContent(css); setPreviewCss(css)
-    } catch { /* no paired CSS — keep current */ }
+      try {
+        const css = await invoke<string>('read_file', { path: cssPath })
+        setStylesheetContent(css); setPreviewCss(css)
+      } catch { /* no paired CSS — keep current */ }
+    }
 
     setProjectName(null)
     setMdDirty(false); setCssDirty(false)
@@ -327,7 +356,7 @@ ${html}
 
   return (
     <div className="app">
-      <Toolbar
+      {activeView === 'editor' && <Toolbar
         projectName={projectName}
         dirty={dirty}
         lastSaved={lastSaved}
@@ -336,14 +365,17 @@ ${html}
         cssDirty={cssDirty}
         onTabChange={setActiveTab}
         onOpen={handleOpen}
+        onImport={() => setImportOpen(true)}
         onSave={handleSave}
         onSaveAs={handleSaveAs}
         onExportHtml={handleExportHtml}
         onExportPdf={handleExportPdf}
         onExportImage={handleExportImage}
         onLoadTemplate={handleLoadTemplate}
-      />
-      <div className="app-main">
+      />}
+      <div className="app-shell">
+        <AppSidebar activeView={activeView} onChange={setActiveView} />
+        {activeView === 'profiles' ? <ProfileManager /> : <div className="app-main">
         <EditorPane
           activeTab={activeTab}
           mdKey={`md-${mdOpenKey}`}
@@ -354,7 +386,9 @@ ${html}
           onCssChange={handleCssChange}
         />
         <CvPreview content={previewContent} css={previewCss} />
+        </div>}
       </div>
+      {importOpen && <CvImportDialog onClose={() => setImportOpen(false)} onApply={handleApplyImport} />}
     </div>
   )
 }

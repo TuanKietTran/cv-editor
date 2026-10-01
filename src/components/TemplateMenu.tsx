@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
+import { bundledTemplateNames } from '../lib/templates'
 import './TemplateMenu.css'
 
 interface Props {
@@ -8,12 +9,13 @@ interface Props {
 
 export default function TemplateMenu({ onSelect }: Props) {
   const [open, setOpen] = useState(false)
-  const [templates, setTemplates] = useState<string[]>([])
+  const [templates, setTemplates] = useState<string[]>(bundledTemplateNames)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     invoke<string[]>('list_templates')
-      .then(setTemplates)
+      .then(names => setTemplates(Array.from(new Set([...bundledTemplateNames, ...names]))))
+      // Browser builds cannot invoke Rust; the bundled fallback remains available.
       .catch(() => {})
   }, [])
 

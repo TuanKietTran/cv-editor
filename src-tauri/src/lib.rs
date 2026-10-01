@@ -81,6 +81,172 @@ fn list_projects() -> Vec<String> {
     names
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct ContactInfo {
+    #[serde(default)]
+    id: String,
+    kind: String,
+    #[serde(default)]
+    label: String,
+    value: String,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct Education {
+    #[serde(default)]
+    id: String,
+    institution: String,
+    #[serde(default)]
+    degree: String,
+    #[serde(default)]
+    field_of_study: String,
+    #[serde(default)]
+    start_date: String,
+    #[serde(default)]
+    end_date: String,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct UserProfile {
+    id: String,
+    full_name: String,
+    headline: String,
+    summary: String,
+    contacts: Vec<ContactInfo>,
+    education: Vec<Education>,
+    created_at: u64,
+    updated_at: u64,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ProfileInput {
+    full_name: String,
+    #[serde(default)]
+    headline: String,
+    #[serde(default)]
+    summary: String,
+    #[serde(default)]
+    contacts: Vec<ContactInfo>,
+    #[serde(default)]
+    education: Vec<Education>,
+}
+
+fn profiles_path() -> PathBuf { app_dir().join("profiles.json") }
+
+fn now_millis() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
+}
+
+fn read_profiles() -> Vec<UserProfile> {
+    fs::read_to_string(profiles_path())
+        .ok()
+        .and_then(|content| serde_json::from_str(&content).ok())
+        .unwrap_or_default()
+}
+
+fn write_profiles(profiles: &[UserProfile]) -> Result<(), String> {
+    fs::create_dir_all(app_dir()).map_err(|e| e.to_string())?;
+    let json = serde_json::to_string_pretty(profiles).map_err(|e| e.to_string())?;
+    let temporary = app_dir().join("profiles.json.tmp");
+    fs::write(&temporary, json).map_err(|e| e.to_string())?;
+    fs::rename(temporary, profiles_path()).map_err(|e| e.to_string())
+}
+
+fn normalize_profile_input(input: ProfileInput, profile_id: &str) -> Result<ProfileInput, String> {
+    let full_name = input.full_name.trim().to_string();
+    if full_name.is_empty() || full_name.chars().count() > 120 {
+        return Err("full name must contain 1 to 120 characters".into());
+    }
+    let valid_kinds = ["phone", "email", "address", "social"];
+    let mut contacts = input.contacts;
+    for (index, contact) in contacts.iter_mut().enumerate() {
+        contact.kind = contact.kind.trim().to_lowercase();
+        contact.label = contact.label.trim().to_string();
+        contact.value = contact.value.trim().to_string();
+        if !valid_kinds.contains(&contact.kind.as_str()) { return Err("invalid contact kind".into()); }
+        if contact.value.is_empty() { return Err("contact value cannot be empty".into()); }
+        if contact.id.is_empty() { contact.id = format!("{}-contact-{}", profile_id, index + 1); }
+    }
+    let mut education = input.education;
+    for (index, item) in education.iter_mut().enumerate() {
+        item.institution = item.institution.trim().to_string();
+        if item.institution.is_empty() { return Err("education institution cannot be empty".into()); }
+        if item.id.is_empty() { item.id = format!("{}-education-{}", profile_id, index + 1); }
+    }
+    Ok(ProfileInput {
+        full_name,
+        headline: input.headline.trim().to_string(),
+        summary: input.summary.trim().to_string(),
+        contacts,
+        education,
+    })
+}
+
+#[tauri::command]
+fn list_profiles() -> Vec<UserProfile> {
+    let mut profiles = read_profiles();
+    profiles.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
+    profiles
+}
+
+#[tauri::command]
+fn create_profile(profile: ProfileInput) -> Result<UserProfile, String> {
+    let now = now_millis();
+    let mut profiles = read_profiles();
+    let mut id = format!("profile-{}", now);
+    let mut suffix = 2;
+    while profiles.iter().any(|profile| profile.id == id) {
+        id = format!("profile-{}-{}", now, suffix);
+        suffix += 1;
+    }
+    let input = normalize_profile_input(profile, &id)?;
+    let created = UserProfile {
+        id,
+        full_name: input.full_name,
+        headline: input.headline,
+        summary: input.summary,
+        contacts: input.contacts,
+        education: input.education,
+        created_at: now,
+        updated_at: now,
+    };
+    profiles.push(created.clone());
+    write_profiles(&profiles)?;
+    Ok(created)
+}
+
+#[tauri::command]
+fn update_profile(id: String, profile: ProfileInput) -> Result<UserProfile, String> {
+    let input = normalize_profile_input(profile, &id)?;
+    let mut profiles = read_profiles();
+    let existing = profiles.iter_mut().find(|item| item.id == id).ok_or("profile not found")?;
+    existing.full_name = input.full_name;
+    existing.headline = input.headline;
+    existing.summary = input.summary;
+    existing.contacts = input.contacts;
+    existing.education = input.education;
+    existing.updated_at = now_millis();
+    let updated = existing.clone();
+    write_profiles(&profiles)?;
+    Ok(updated)
+}
+
+#[tauri::command]
+fn delete_profile(id: String) -> Result<(), String> {
+    let mut profiles = read_profiles();
+    let previous_len = profiles.len();
+    profiles.retain(|profile| profile.id != id);
+    if profiles.len() == previous_len { return Err("profile not found".into()); }
+    write_profiles(&profiles)
+}
+
 #[derive(Serialize)]
 struct ProjectData {
     md: String,
@@ -262,6 +428,10 @@ pub fn run() {
             open_file,
             get_template_path,
             list_templates,
+            list_profiles,
+            create_profile,
+            update_profile,
+            delete_profile,
             export_pdf_native,
         ])
         .run(tauri::generate_context!())

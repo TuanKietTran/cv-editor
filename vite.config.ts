@@ -35,5 +35,14 @@ export default defineConfig(async () => ({
       // 3. tell vite to ignore watching `src-tauri`
       ignored: ["**/src-tauri/**"],
     },
+    // Same-origin development bridge: it carries the CV server session cookie
+    // without weakening the server's CORS policy.
+    proxy: {
+      "/cv-server": {
+        target: process.env.CV_SERVER_PROXY_TARGET || "http://localhost:3000",
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/cv-server/, ""),
+      },
+    },
   },
 }));

@@ -11,6 +11,7 @@ interface Props {
   cssDirty: boolean
   onTabChange: (tab: EditorTab) => void
   onOpen: () => void
+  onImport: () => void
   onSave: () => void
   onSaveAs: () => void
   onExportHtml: () => void
@@ -35,6 +36,7 @@ export default function Toolbar({
   cssDirty,
   onTabChange,
   onOpen,
+  onImport,
   onSave,
   onSaveAs,
   onExportHtml,
@@ -47,8 +49,11 @@ export default function Toolbar({
       <div className="toolbar-left">
         <TemplateMenu onSelect={onLoadTemplate} />
         <div className="toolbar-divider" />
-        <button className="toolbar-btn" onClick={onOpen} title="Open project (⌘O)">
+        <button className="toolbar-btn" onClick={onOpen} title="Open Markdown project (⌘O)">
           Open
+        </button>
+        <button className="toolbar-btn toolbar-btn-import" onClick={onImport} title="Import CV from a PDF or image">
+          Import CV
         </button>
         <button
           className={`toolbar-btn${dirty ? ' toolbar-btn-save-active' : ''}`}

@@ -1,0 +1,119 @@
+.cv-import-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: rgba(5, 7, 11, 0.76);
+  backdrop-filter: blur(10px);
+}
+
+.cv-import-dialog {
+  width: min(1020px, 96vw);
+  height: min(720px, 90vh);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #e9eef7;
+  background: #151922;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 14px;
+  box-shadow: 0 28px 80px rgba(0,0,0,.55);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.cv-import-dialog > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px 22px 17px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.cv-import-dialog h2 { margin: 0 0 5px; font-size: 1.15rem; }
+.cv-import-dialog header p { margin: 0; color: #929bad; font-size: .8rem; }
+.cv-import-close { border: 0; background: transparent; color: #8992a3; font-size: 1.7rem; line-height: 1; cursor: pointer; }
+.cv-import-close:hover { color: white; }
+
+.cv-import-body { display: grid; grid-template-columns: minmax(390px, 46%) 1fr; flex: 1; min-height: 0; }
+.cv-import-source { padding: 20px; overflow-y: auto; border-right: 1px solid rgba(255,255,255,.08); }
+.cv-import-details { padding: 20px; min-width: 0; overflow-y: auto; }
+
+.cv-drop-zone {
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1.5px dashed #46546b;
+  border-radius: 11px;
+  background: rgba(80, 117, 174, .06);
+  cursor: pointer;
+  transition: border-color .15s, background .15s, transform .15s;
+}
+.cv-drop-zone:hover, .cv-drop-zone.dragging { border-color: #70a7ef; background: rgba(55, 126, 218, .14); transform: translateY(-1px); }
+.cv-drop-zone.has-error { border-color: #915151; }
+.cv-drop-icon { font-size: 2rem; color: #70a7ef; }
+.cv-drop-zone strong { font-size: .9rem; }
+.cv-drop-zone > span:not(.cv-drop-icon) { color: #8792a5; font-size: .72rem; }
+.cv-drop-zone button, .cv-import-primary, .cv-import-secondary {
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,.13);
+  padding: 7px 12px;
+  color: #dce9fa;
+  background: rgba(255,255,255,.07);
+  cursor: pointer;
+  font-size: .74rem;
+}
+.cv-drop-zone button { margin-top: 4px; }
+
+.cv-import-options { display: flex; align-items: end; gap: 10px; margin: 15px 0; }
+.cv-import-options label { display: flex; flex: 1; flex-direction: column; gap: 5px; color: #8994a7; font-size: .68rem; }
+.cv-import-options select {
+  width: 100%; padding: 7px 9px; border: 1px solid rgba(255,255,255,.12); border-radius: 6px;
+  background: #202631; color: #e3e9f3; font-size: .75rem;
+}
+.cv-import-primary { border-color: #3477c6; background: #2866ad; color: white; }
+.cv-import-primary:hover:not(:disabled) { background: #3478c5; }
+.cv-import-primary:disabled { opacity: .4; cursor: default; }
+.cv-import-secondary { display: block; margin-top: 10px; color: #aab4c4; }
+
+.cv-import-error, .cv-import-warning { white-space: pre-line; padding: 9px 10px; margin: 10px 0; border-radius: 6px; font-size: .72rem; line-height: 1.5; }
+.cv-import-error { border: 1px solid rgba(235,91,91,.3); background: rgba(190,55,55,.12); color: #f2a4a4; }
+.cv-import-warning { border: 1px solid rgba(224,164,55,.25); background: rgba(190,132,36,.1); color: #e5c481; }
+
+.cv-import-list { display: flex; flex-direction: column; gap: 6px; }
+.cv-import-item {
+  position: relative; overflow: hidden; width: 100%; display: flex; align-items: center; gap: 9px;
+  padding: 9px; text-align: left; border: 1px solid rgba(255,255,255,.08); border-radius: 7px;
+  color: #d9e0eb; background: rgba(255,255,255,.025); cursor: pointer;
+}
+.cv-import-item.selected { border-color: rgba(83,150,235,.6); background: rgba(54,118,200,.1); }
+.cv-import-file-icon { width: 31px; padding: 5px 0; text-align: center; border-radius: 4px; background: #2a3340; color: #86b3ee; font-size: .57rem; font-weight: 700; }
+.cv-import-file-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.cv-import-file-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .73rem; }
+.cv-import-file-copy small { color: #7d8798; font-size: .62rem; }
+.cv-import-status { padding: 3px 5px; border-radius: 4px; color: #99a4b6; background: #282e38; font-size: .57rem; text-transform: uppercase; }
+.cv-import-status.succeeded { color: #8dd5a5; background: rgba(51,145,83,.16); }
+.cv-import-status.failed { color: #ef9696; background: rgba(177,56,56,.16); }
+.cv-import-remove { padding: 3px; color: #8994a5; font-size: 1rem; }
+.cv-import-progress { position: absolute; left: 0; bottom: 0; height: 2px; background: #4b98ef; transition: width .3s; }
+
+.cv-import-details h3 { margin: 0 0 14px; overflow-wrap: anywhere; font-size: .95rem; }
+.cv-import-empty { height: 100%; display: grid; place-items: center; color: #6f798a; font-size: .8rem; }
+.cv-import-metadata { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 12px; }
+.cv-import-metadata span { display: flex; flex-direction: column; gap: 3px; padding: 8px; border-radius: 6px; background: rgba(255,255,255,.035); color: #788396; font-size: .62rem; }
+.cv-import-metadata b { color: #c7d0dd; font-size: .7rem; font-weight: 500; }
+.cv-import-preview-tabs { display: flex; justify-content: space-between; margin-top: 14px; color: #8f9bae; font-size: .68rem; }
+.cv-import-preview-text { height: 280px; margin: 7px 0 12px; padding: 12px; overflow: auto; white-space: pre-wrap; border: 1px solid rgba(255,255,255,.08); border-radius: 7px; background: #10131a; color: #bdc7d5; font: .68rem/1.5 "DM Mono", monospace; }
+.cv-import-apply { width: 100%; }
+
+@media (max-width: 760px) {
+  .cv-import-backdrop { padding: 10px; }
+  .cv-import-dialog { width: 100%; height: 96vh; }
+  .cv-import-body { display: block; overflow-y: auto; }
+  .cv-import-source { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.08); overflow: visible; }
+  .cv-import-details { overflow: visible; }
+}
